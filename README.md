@@ -9,71 +9,103 @@ The goal of the project was to build a reliable and automated deployment archite
 The final architecture supports **containerized frontend and backend services, persistent MongoDB storage, workload distribution across two EKS worker nodes, external application access, and automated rolling deployments.**
 
 ---
-<img width="720" height="680" alt="cicd_pipeline_flow" src="https://github.com/user-attachments/assets/d3d368d0-1fca-44ec-9514-6d641ac7f316" />
-<img width="720" height="680" alt="eks_cluster_internals" src="https://github.com/user-attachments/assets/4b04947c-1a66-47f7-9b24-d34573f8bc75" />
-
-
-
 
 ## Architecture
 
 ```text
-                                                     Developer
-                                                        │
-                                                        │ git push
-                                                        ▼
-                                                 GitHub Repository
-                                                        │
-                                                        ▼
-                                                GitHub Actions
-                                                        │
-                                          ┌─────────────┴─────────────┐
-                                          │                           │
-                                        Build Frontend              Build Backend
-                                          │                           │
-                                          └─────────────┬─────────────┘
-                                                        │
-                                                   Docker Images
-                                                        │
-                                                        ▼
-                                                   Amazon ECR
-                                                 ┌──────┴──────┐
-                                                 │             │
-                                          Frontend Image   Backend Image
-                                                 │             │
-                                                 └──────┬──────┘
-                                                        │
-                                                        ▼
-                                                   Amazon EKS
-                                                ┌───────────────┐
-                                                │               │
-                                           Worker Node 1   Worker Node 2
-                                                │               │
-                                          Frontend Pod     Frontend Pod
-                                          Backend Pod      Backend Pod
-                                                │               │
-                                                └───────┬───────┘
-                                                        │
-                                                   Kubernetes
-                                                     Services
-                                                        │
-                                                        ▼
-                                                      NGINX
-                                                        │
-                                                        ▼
-                                                AWS Load Balancer
-                                                        │
-                                                        ▼
-                                                     Internet
-                                        
-                                                MongoDB Database
-                                                        │
-                                                 Persistent Volume
-                                                        │
-                                                   EBS CSI Driver
-                                                        │
-                                                        ▼
-                                                     AWS EBS
+                              ┌──────────────────────────┐
+                              │        DEVELOPER         │
+                              │   Code Changes / Push    │
+                              └────────────┬─────────────┘
+                                           │
+                                           ▼
+                              ┌──────────────────────────┐
+                              │      GitHub Repository   │
+                              │   Rabbit-aws-eks-project │
+                              └────────────┬─────────────┘
+                                           │
+                                      Push to main
+                                           │
+                                           ▼
+                    ┌────────────────────────────────────────────┐
+                    │             GitHub Actions CI/CD           │
+                    │                                            │
+                    │  • AWS authentication via GitHub Secrets   │
+                    │  • Increment application version           │
+                    │  • Build Frontend & Backend images         │
+                    │  • Push images to Amazon ECR               │
+                    │  • Update Kubernetes Deployments           │
+                    │  • Verify rollout                          │
+                    └─────────────────────┬──────────────────────┘
+                                          │
+                              ┌───────────┴───────────┐
+                              ▼                       ▼
+                    ┌─────────────────┐      ┌─────────────────┐
+                    │ Amazon ECR      │      │ Amazon ECR      │
+                    │ Backend Image   │      │ Frontend Image  │
+                    └────────┬────────┘      └────────┬────────┘
+                             │                        │
+                             └────────────┬───────────┘
+                                          │
+                                          ▼
+              ┌─────────────────────────────────────────────────────┐
+              │                    AWS EKS CLUSTER                  │
+              │                                                     │
+              │  ┌───────────────────────────────────────────────┐  │
+              │  │              rabbit-app namespace             │  │
+              │  │                                               │  │
+              │  │   ┌──────────────┐       ┌──────────────┐     │  │
+              │  │   │ Frontend Pod │       │ Frontend Pod │     │  │
+              │  │   │   Replica 1  │       │   Replica 2  │     │  │
+              │  │   └──────┬───────┘       └──────┬───────┘     │  │
+              │  │          │                      │             │  │
+              │  │   ┌──────▼───────┐       ┌──────▼───────┐     │  │
+              │  │   │ Backend Pod  │       │ Backend Pod  │     │  │
+              │  │   │   Replica 1  │       │   Replica 2  │     │  │
+              │  │   └──────────────┘       └──────────────┘     │  │
+              │  │                                               │  │
+              │  │       Pod Anti-Affinity / Distribution        │  │
+              │  └───────────────────────────────────────────────┘  │
+              │                                                     │
+              │  ┌───────────────────────────────────────────────┐  │
+              │  │               rabbit-db namespace             │  │
+              │  │                                               │  │
+              │  │             ┌──────────────────┐              │  │
+              │  │             │   MongoDB Pod    │              │  │
+              │  │             └────────┬─────────┘              │  │
+              │  │                      │                        │  │
+              │  │             MongoDB Service                  │  │
+              │  │                      │                        │  │
+              │  │             PersistentVolumeClaim             │  │
+              │  └──────────────────────┼────────────────────────┘  │
+              │                         │                           │
+              └─────────────────────────┼───────────────────────────┘
+                                        │
+                                        ▼
+                              ┌────────────────────┐
+                              │   AWS EBS Volume   │
+                              │ Persistent Storage │
+                              └────────────────────┘
+
+
+                         EXTERNAL APPLICATION TRAFFIC
+                                      │
+                                      ▼
+                              ┌─────────────────┐
+                              │ AWS Load        │
+                              │ Balancer        │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                              ┌─────────────────┐
+                              │      NGINX      │
+                              │  Entry Point    │
+                              └────────┬────────┘
+                                       │
+                              ┌────────┴────────┐
+                              ▼                 ▼
+                         Frontend           Backend
+                          Service            Service
 ```
 
 ---
