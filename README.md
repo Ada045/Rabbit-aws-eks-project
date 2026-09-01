@@ -12,7 +12,7 @@ The final architecture supports **containerized frontend and backend services, p
 
 ## Architecture
 
-                                        ```text
+```text
                                                      Developer
                                                         │
                                                         │ git push
