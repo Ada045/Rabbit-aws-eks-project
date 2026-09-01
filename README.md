@@ -75,23 +75,13 @@ The final architecture supports **containerized frontend and backend services, p
 
 # 1. AWS EKS Infrastructure
 
-I started by creating an **Amazon EKS cluster** with two worker nodes.
+I started by creating an **Amazon EKS cluster** with a managed node group containing **two worker nodes**. This cluster served as the environment where I deployed and managed my Rabbit LMS application.
 
-The two-node architecture allowed me to run multiple replicas of the frontend and backend while also introducing workload distribution and availability considerations.
+I separated the application workloads from the database by running the **frontend and backend in the `rabbit-app` namespace**, while MongoDB was deployed in a separate namespace.
 
-The cluster became the foundation for running the entire application stack.
+This also made scaling easier. Rather than creating additional servers manually whenever I needed more application instances, I could define the number of **replicas** I wanted in my deployments and let Kubernetes schedule those pods across the available nodes.
 
-### Why?
-
-Instead of running the application directly on individual EC2 instances, Kubernetes provides:
-
-* Container orchestration
-* Automated scheduling
-* Replica management
-* Service discovery
-* Rolling deployments
-* Self-healing workloads
-* Scalable application management
+The two-node setup also allowed me to test how Kubernetes distributes workloads and maintain multiple frontend and backend replicas across the cluster.
 
 ---
 
