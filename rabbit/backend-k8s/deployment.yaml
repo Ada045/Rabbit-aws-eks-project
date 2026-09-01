@@ -5,6 +5,11 @@ metadata:
   namespace: rabbit-app
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: rabbit-backend
@@ -85,12 +90,12 @@ spec:
                   name: rabbit-configmap
                   key: frontend-url
       topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app: rabbit-backend
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: rabbit-backend
 ---
 apiVersion: v1
 kind: Service
