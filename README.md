@@ -113,60 +113,15 @@ MongoDB was exposed through a **Kubernetes Service**, giving my backend a stable
 
 ---
 
-# 4. Kubernetes Secrets and Configuration
-
-After deploying MongoDB, I configured the backend application to connect to the database.
-
-Instead of hardcoding database credentials into the application, I created Kubernetes configuration resources.
-
-I used:
-
-* **Kubernetes Secrets** for sensitive database credentials.
-* **ConfigMaps** for non-sensitive application configuration.
-* **Deployments** to inject the required configuration into the backend.
-
-The general flow was:
-
-```text
-MongoDB Credentials
-        │
-        ▼
-Kubernetes Secret
-        │
-        ▼
-Backend Deployment
-        │
-        ▼
-Backend Application
-        │
-        ▼
-MongoDB Service
-        │
-        ▼
-MongoDB
-```
-
-### Why?
-
-This keeps sensitive configuration separate from the application source code and makes the deployment configuration easier to manage.
-
----
-
 # 5. Backend Deployment
 
-I created a Kubernetes Deployment for the Rabbit LMS backend.
+### 3. Backend Deployment & Configuration
 
-The backend was containerized using Docker and stored in Amazon ECR.
+I deployed the Rabbit LMS backend as a Kubernetes **Deployment** and specified **two replicas** in the Deployment configuration so Kubernetes could run the backend across my two worker nodes.
 
-I configured **two backend replicas** to improve availability and allow Kubernetes to distribute the workload across the worker nodes.
+I created a **Kubernetes Secret** to securely store the MongoDB authentication details, including the **MongoDB URI**, and configured the required **environment variables** needed for the backend application to run.
 
-The backend was exposed internally using a Kubernetes **ClusterIP Service**.
-
-### Why ClusterIP?
-
-The backend did not need to be directly exposed to the public internet.
-
-It only needed to be reachable by the application components inside the Kubernetes cluster.
+The backend was exposed using a **ClusterIP Service**, allowing it to communicate with MongoDB through its internal Kubernetes Service without exposing the backend directly to the internet.
 
 ---
 
