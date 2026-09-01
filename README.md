@@ -9,6 +9,10 @@ The goal of the project was to build a reliable and automated deployment archite
 The final architecture supports **containerized frontend and backend services, persistent MongoDB storage, workload distribution across two EKS worker nodes, external application access, and automated rolling deployments.**
 
 ---
+<img width="2720" height="2080" alt="cicd_pipeline_flow" src="https://github.com/user-attachments/assets/d3d368d0-1fca-44ec-9514-6d641ac7f316" />
+<img width="2720" height="2080" alt="cicd_pipeline_flow" src="https://github.com/user-attachments/assets/984468d4-785d-4364-9676-0f4b2bef0008" />
+
+
 
 ## Architecture
 
