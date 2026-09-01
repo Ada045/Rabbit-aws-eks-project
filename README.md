@@ -154,32 +154,6 @@ The goal was to improve **application availability and resilience** by avoiding 
 
 ---
 
-## Scheduling Challenge
-
-<img width="658" height="258" alt="Screenshot (58)" src="https://github.com/user-attachments/assets/e9334cb6-5d9d-4dcd-9492-ce0f50a7f4f7" />
-
-This configuration also introduced one of the major problems I encountered during the project.
-
-My initial affinity/anti-affinity rules were **too restrictive** for the capacity of my two-node cluster.
-
-Kubernetes was unable to find a node that satisfied all the scheduling requirements.
-
-As a result, some pods remained in:
-
-```text
-Pending
-```
-
-state.
-
-I investigated the scheduler behavior and adjusted the affinity configuration so that the workload could be distributed across the available nodes without preventing Kubernetes from scheduling the pods.
-
-### What I learned
-
-Affinity rules are powerful, but they must be designed according to the actual capacity and topology of the cluster.
-
-A scheduling rule that is too strict can become a scheduling blocker rather than improving availability.
-
 ---
 
 # 8. NGINX and External Application Access
