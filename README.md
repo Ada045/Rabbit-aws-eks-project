@@ -162,19 +162,22 @@ I configured the NGINX Kubernetes Service as a LoadBalancer, which allowed AWS t
 
 The traffic flow was:
 
-Internet
-   │
-   ▼
-AWS Load Balancer
-   │
-   ▼
-NGINX
-   │
-   ├── Frontend
-   │
-   └── Backend
+```text
+                     Internet
+                        │
+                        ▼
+                     AWS Load Balancer
+                        │
+                        ▼
+                     NGINX
+                        │
+                        ├── Frontend
+                        │
+                        └── Backend
+```
 
 The frontend and backend remained running inside the Kubernetes cluster, while NGINX handled routing incoming requests to the appropriate application service. This gave me a single external endpoint through which users could access the Rabbit LMS application.
+
 ---
 
 # 9. GitHub Actions CI/CD Pipeline
