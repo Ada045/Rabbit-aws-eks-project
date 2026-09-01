@@ -113,7 +113,7 @@ MongoDB was exposed through a **Kubernetes Service**, giving my backend a stable
 
 ---
 
-# 5. Backend Deployment & Configuration
+# 4. Backend Deployment & Configuration
 
 I deployed the Rabbit LMS backend as a Kubernetes **Deployment** and specified **two replicas** in the Deployment configuration so Kubernetes could run the backend across my two worker nodes.
 
@@ -123,7 +123,7 @@ The backend was exposed using a **ClusterIP Service**, allowing it to communicat
 
 ---
 
-# 6. Frontend Deployment
+# 5. Frontend Deployment
 
 I also containerized the Rabbit LMS frontend and created a Kubernetes Deployment for it.
 
@@ -135,7 +135,7 @@ The frontend was also initially kept internal using Kubernetes service networkin
 
 ---
 
-# 7. Pod Affinity / Anti-Affinity and Workload Distribution
+# 6. Pod Affinity / Anti-Affinity and Workload Distribution
 
 I configured **pod anti-affinity rules** to distribute my frontend and backend replicas across the two worker nodes.
 
@@ -154,7 +154,7 @@ The goal was to improve **application availability and resilience** by avoiding 
 
 ---
 
-# 8. NGINX and External Application Access
+# 7. NGINX and External Application Access
 
 To make the application accessible from the internet, I deployed NGINX as the entry point for traffic into the cluster.
 
@@ -163,194 +163,76 @@ I configured the NGINX Kubernetes Service as a LoadBalancer, which allowed AWS t
 The traffic flow was:
 
 ```text
-                     Internet
-                        │
-                        ▼
-                     AWS Load Balancer
-                        │
-                        ▼
-                     NGINX
-                        │
-                        ├── Frontend
-                        │
-                        └── Backend
+                                      Internet
+                                          │
+                                          ▼
+                                      AWS Load Balancer
+                                          │
+                                          ▼
+                                        NGINX
+                                          │
+                                          ├── Frontend
+                                          │
+                                          └── Backend
 ```
 
 The frontend and backend remained running inside the Kubernetes cluster, while NGINX handled routing incoming requests to the appropriate application service. This gave me a single external endpoint through which users could access the Rabbit LMS application.
 
----
-
-# 9. GitHub Actions CI/CD Pipeline
-
-After manually deploying and validating the application, I automated the deployment process using **GitHub Actions**.
-
-The objective was to make application releases repeatable and automated.
-
-The pipeline is triggered whenever a new version is pushed to the `main` branch.
-
-### CI/CD Flow
-
-```text
-Git Push
-   │
-   ▼
-GitHub Actions
-   │
-   ▼
-Increment Application Version
-   │
-   ├───────────────┐
-   ▼               ▼
-Build Frontend   Build Backend
-   │               │
-   └───────┬───────┘
-           ▼
-      Docker Images
-           │
-           ▼
-      Amazon ECR
-           │
-           ▼
-       Amazon EKS
-           │
-           ▼
-    Update Deployment
-           │
-           ▼
-    Rolling Update
-           │
-           ▼
-   Verify Deployment
-```
+<img width="1366" height="222" alt="Screenshot (54)" src="https://github.com/user-attachments/assets/f210585a-1ed5-4a04-80a4-c09ca92e1151" />
+<img width="1366" height="729" alt="Screenshot (56)" src="https://github.com/user-attachments/assets/9a1e37fc-e139-4da0-b7d3-d0e1d62d74f4" />
 
 ---
 
-# 10. Versioned Docker Images
+# 8. Automated CI/CD with GitHub Actions
 
-Every pipeline execution increments the application version.
+After manually deploying and validating the application on EKS, I automated the deployment process using **GitHub Actions**.
 
-For example:
+Whenever I make an update or fix to the application and push the changes to the `main` branch, the pipeline is triggered automatically.
 
-```text
-rabbit-frontend:0.0.1
-rabbit-backend:0.0.1
-```
+For AWS authentication, I stored my **AWS Access Key ID and AWS Secret Access Key** as encrypted **GitHub Secrets**. The workflow uses these credentials to authenticate with my AWS account and access the required AWS services.
 
-A subsequent deployment might produce:
+The pipeline then:
 
-```text
-rabbit-frontend:0.0.2
-rabbit-backend:0.0.2
-```
+1. **Increments the application version** using the credentials stored securely in GitHub Secrets.
+2. **Authenticates with AWS** for the new release.
+3. **Builds new Docker images** for both the frontend and backend.
+4. **Pushes the versioned images to Amazon ECR**.
+5. **Updates the Kubernetes Deployments** with the new image versions using `kubectl set image`.
+6. **Triggers a Kubernetes RollingUpdate**, where the old pods are gradually replaced with pods running the new images.
+7. **Verifies the rollout** to confirm that the new version is running successfully.
 
-The images are pushed to Amazon ECR.
 
-This gives each deployment a specific image version rather than relying on an ambiguous tag such as `latest`.
+The Kubernetes Deployments are then updated to use the new images. Kubernetes handles the transition by gradually replacing the old pods with the new ones according to the configured **RollingUpdate strategy** rather than requiring me to manually delete and recreate the pods.
 
-### Why?
-
-Versioned images make deployments easier to track and make it clear which application version is running inside the cluster.
-
----
-
-# 11. Kubernetes Rolling Update
-
-After pushing the new images to ECR, GitHub Actions updates the Kubernetes Deployments using `kubectl set image`.
-
-Kubernetes then performs a **RollingUpdate**.
-
-For example, before deployment:
-
-```text
-Node 1                    Node 2
-────────                   ────────
-Backend v1                Backend v1
-Frontend v1               Frontend v1
-```
-
-When version `v2` is released, Kubernetes gradually replaces the old pods with new pods.
-
-During the update:
-
-```text
-Node 1                    Node 2
-────────                   ────────
-Backend v2                Backend v1
-Frontend v1               Frontend v2
-```
-
-After the rollout:
-
-```text
-Node 1                    Node 2
-────────                   ────────
-Backend v2                Backend v2
-Frontend v2               Frontend v2
-```
-
-The important point is that I **do not manually delete the old pods**.
-
-Kubernetes manages the transition from the old ReplicaSet to the new ReplicaSet according to the Deployment's rolling update strategy.
-
-The pipeline waits for the rollout to complete before continuing.
-
----
-
-# 12. Deployment Verification
-
-The pipeline also performs a final verification stage.
-
-It checks:
-
-* Kubernetes Deployments
-* Running pods
-* Kubernetes Services
-* Deployed container images
-* Application version
-* Cluster and namespace information
-
-This provides confirmation that the new application version was successfully rolled out.
-
----
-
-# 13. AWS Authentication
-
-For the final implementation, GitHub Actions authenticates with AWS using **credentials stored securely as GitHub Secrets**.
-
-This allows the pipeline to authenticate to AWS without placing the credentials directly inside the workflow file.
-
-The credentials are then used by the pipeline to:
-
-* Authenticate with Amazon ECR
-* Push Docker images
-* Configure access to Amazon EKS
-* Update Kubernetes deployments
-
----
-
-# 14. Major Challenges I Solved
-
-This project wasn't just about getting everything running. I encountered and resolved several real infrastructure problems.
-
-### Kubernetes Scheduling
+### Issue Encountered:
 
 <img width="658" height="258" alt="Screenshot (58)" src="https://github.com/user-attachments/assets/e9334cb6-5d9d-4dcd-9492-ce0f50a7f4f7" />
 
-My initial affinity configuration prevented Kubernetes from finding suitable nodes for some pods.
+During one of my deployments, I encountered a scheduling issue caused by the **pod anti-affinity rules** I had configured.
 
-**Solution:** I adjusted the scheduling rules to allow proper workload distribution across the available nodes.
+My anti-affinity rule was designed to prevent two replicas of the same application from running on the same worker node. This worked as expected during the initial deployment:
 
-### EBS CSI Driver
+However, when GitHub Actions deployed a new application version, Kubernetes needed to create the new pods before removing the old ones.
 
-The EBS CSI controller initially failed because the required AWS EC2 permission was missing.
+Because both nodes already had a frontend pod and a backend pod, the anti-affinity rules prevented the new replicas from being scheduled on either node. As a result, the new pods remained in a **Pending** state because there was no node that satisfied the scheduling rules.
 
-The controller reported an authorization failure involving:
+I resolved this by configuring the Deployment with a **RollingUpdate strategy**:
 
-```text
-ec2:DescribeAvailabilityZones
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 ```
 
-I traced the error through the Kubernetes logs, identified the IAM issue, corrected the permissions, and restored the EBS CSI Driver.
+With `maxSurge: 0`, Kubernetes does not create an additional pod beyond the desired replica count. With `maxUnavailable: 1`, Kubernetes is allowed to terminate one existing pod during the update.
+
+The same process is then repeated for the remaining replicas.
+
+This solved the scheduling conflict between my **pod anti-affinity rules** and the deployment process, while still maintaining the workload distribution I wanted across my two worker nodes.
+
+---
 
 ### Application Connectivity
 
@@ -368,7 +250,7 @@ I automated the entire release process so that application changes could move fr
 
 ---
 
-# 15. Final Technology Stack
+# 9. Final Technology Stack
 
 ### Cloud
 
@@ -406,27 +288,27 @@ The final result is an automated cloud deployment architecture for Rabbit LMS.
 A typical release now follows this process:
 
 ```text
-Developer pushes code
-        ↓
-GitHub Actions starts
-        ↓
-Application version increments
-        ↓
-Frontend & backend are built
-        ↓
-Docker images are created
-        ↓
-Images are pushed to Amazon ECR
-        ↓
-EKS deployments are updated
-        ↓
-Kubernetes performs a RollingUpdate
-        ↓
-New pods become Ready
-        ↓
-Old pods are replaced
-        ↓
-Deployment is verified
+                                        Developer pushes code
+                                                ↓
+                                        GitHub Actions starts
+                                                ↓
+                                        Application version increments
+                                                ↓
+                                        Frontend & backend are built
+                                                ↓
+                                        Docker images are created
+                                                ↓
+                                        Images are pushed to Amazon ECR
+                                                ↓
+                                        EKS deployments are updated
+                                                ↓
+                                        Kubernetes performs a RollingUpdate
+                                                ↓
+                                        New pods become Ready
+                                                ↓
+                                        Old pods are replaced
+                                                ↓
+                                        Deployment is verified
 ```
 
 This project gave me practical experience designing and troubleshooting a complete **cloud-native deployment workflow**, from persistent database storage and Kubernetes workload scheduling to container registries, CI/CD automation, networking, IAM, and rolling application releases.
