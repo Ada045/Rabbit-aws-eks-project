@@ -89,13 +89,13 @@ The two-node setup also allowed me to test how Kubernetes distributes workloads 
 
 # 2. Persistent MongoDB Storage
 
-Before deploying MongoDB, I wanted to make sure that my database data would not depend on the lifecycle of the MongoDB pod.
+Before deploying **MongoDB**, I wanted to make sure that my database data would not depend on the lifecycle of the MongoDB pod.
 
-If the MongoDB pod or the node running it failed, I didn't want the database data to disappear along with it. So, before installing MongoDB with Helm, I installed the AWS EBS CSI Driver as an add-on on my EKS cluster.
+If the MongoDB pod or the node running it failed, I didn't want the database data to disappear along with it. So, before installing MongoDB with Helm, I installed the **AWS EBS CSI Driver** as an add-on on my **EKS cluster**.
 
 The EBS CSI Driver allows Kubernetes to provision and manage AWS EBS volumes as persistent storage for my workloads.
 
-I then deployed MongoDB using Helm, with its storage configured through a PersistentVolumeClaim (PVC).
+I then deployed MongoDB using Helm, with its storage configured through a **PersistentVolumeClaim (PVC)**.
 
 ---
 
