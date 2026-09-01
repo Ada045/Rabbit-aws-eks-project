@@ -85,6 +85,8 @@ This also made scaling easier. Rather than creating additional servers manually 
 
 The two-node setup also allowed me to test how Kubernetes distributes workloads and maintain multiple frontend and backend replicas across the cluster.
 
+<img width="1366" height="768" alt="Screenshot (49)" src="https://github.com/user-attachments/assets/8034850c-d18b-41b5-8552-ad0582aeb99a" />
+
 ---
 
 # 2. Persistent MongoDB Storage
