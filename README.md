@@ -172,6 +172,8 @@ Distributing the replicas across the nodes improves workload resilience.
 
 ## Scheduling Challenge
 
+<img width="658" height="258" alt="Screenshot (58)" src="https://github.com/user-attachments/assets/e9334cb6-5d9d-4dcd-9492-ce0f50a7f4f7" />
+
 This configuration also introduced one of the major problems I encountered during the project.
 
 My initial affinity/anti-affinity rules were **too restrictive** for the capacity of my two-node cluster.
