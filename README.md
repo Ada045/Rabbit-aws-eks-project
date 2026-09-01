@@ -113,9 +113,7 @@ MongoDB was exposed through a **Kubernetes Service**, giving my backend a stable
 
 ---
 
-# 5. Backend Deployment
-
-### 3. Backend Deployment & Configuration
+# 5. Backend Deployment & Configuration
 
 I deployed the Rabbit LMS backend as a Kubernetes **Deployment** and specified **two replicas** in the Deployment configuration so Kubernetes could run the backend across my two worker nodes.
 
@@ -139,34 +137,20 @@ The frontend was also initially kept internal using Kubernetes service networkin
 
 # 7. Pod Affinity / Anti-Affinity and Workload Distribution
 
-One of the important Kubernetes configurations I implemented was workload distribution using affinity/anti-affinity rules.
+I configured **pod anti-affinity rules** to distribute my frontend and backend replicas across the two worker nodes.
 
-My objective was to avoid placing both replicas of the same application component on the same worker node.
-
-For example:
+With two replicas for each application, I configured Kubernetes to avoid placing both replicas of the same component on the same node.
 
 ```text
-Worker Node 1             Worker Node 2
-─────────────             ─────────────
-Frontend Pod 1            Frontend Pod 2
-Backend Pod 1             Backend Pod 2
+Worker Node 1          Worker Node 2
+─────────────          ─────────────
+Frontend Pod 1         Frontend Pod 2
+Backend Pod 1          Backend Pod 2
 ```
 
-Instead of:
+This means that if one worker node goes down, the other node still has a frontend and backend pod running, allowing the application to remain accessible.
 
-```text
-Worker Node 1             Worker Node 2
-─────────────             ─────────────
-Frontend Pod 1            Backend Pod 1
-Frontend Pod 2
-Backend Pod 2
-```
-
-### Why?
-
-If both frontend replicas were placed on the same node and that node failed, both replicas could become unavailable.
-
-Distributing the replicas across the nodes improves workload resilience.
+The goal was to improve **application availability and resilience** by avoiding a single point of failure at the node level.
 
 ---
 
@@ -385,6 +369,8 @@ The credentials are then used by the pipeline to:
 This project wasn't just about getting everything running. I encountered and resolved several real infrastructure problems.
 
 ### Kubernetes Scheduling
+
+<img width="658" height="258" alt="Screenshot (58)" src="https://github.com/user-attachments/assets/e9334cb6-5d9d-4dcd-9492-ce0f50a7f4f7" />
 
 My initial affinity configuration prevented Kubernetes from finding suitable nodes for some pods.
 
