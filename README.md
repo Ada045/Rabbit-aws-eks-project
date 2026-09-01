@@ -12,63 +12,63 @@ The final architecture supports **containerized frontend and backend services, p
 
 ## Architecture
 
-```text
-                                                                           Developer
-                                                                              │
-                                                                              │ git push
-                                                                              ▼
-                                                                       GitHub Repository
-                                                                              │
-                                                                              ▼
-                                                                      GitHub Actions
-                                                                              │
-                                                                ┌─────────────┴─────────────┐
-                                                                │                           │
-                                                          Build Frontend              Build Backend
-                                                                │                           │
-                                                                └─────────────┬─────────────┘
-                                                                              │
-                                                                         Docker Images
-                                                                              │
-                                                                              ▼
-                                                                         Amazon ECR
-                                                                       ┌──────┴──────┐
-                                                                       │             │
-                                                                Frontend Image   Backend Image
-                                                                       │             │
-                                                                       └──────┬──────┘
-                                                                              │
-                                                                              ▼
-                                                                         Amazon EKS
-                                                                      ┌───────────────┐
-                                                                      │               │
-                                                                 Worker Node 1   Worker Node 2
-                                                                      │               │
-                                                                Frontend Pod     Frontend Pod
-                                                                Backend Pod      Backend Pod
-                                                                      │               │
-                                                                      └───────┬───────┘
-                                                                              │
-                                                                         Kubernetes
-                                                                           Services
-                                                                              │
-                                                                              ▼
-                                                                            NGINX
-                                                                              │
-                                                                              ▼
-                                                                      AWS Load Balancer
-                                                                              │
-                                                                              ▼
-                                                                           Internet
-                                                  
-                                                                      MongoDB Database
-                                                                              │
-                                                                       Persistent Volume
-                                                                              │
-                                                                         EBS CSI Driver
-                                                                              │
-                                                                              ▼
-                                                                           AWS EBS
+                                        ```text
+                                                     Developer
+                                                        │
+                                                        │ git push
+                                                        ▼
+                                                 GitHub Repository
+                                                        │
+                                                        ▼
+                                                GitHub Actions
+                                                        │
+                                          ┌─────────────┴─────────────┐
+                                          │                           │
+                                        Build Frontend              Build Backend
+                                          │                           │
+                                          └─────────────┬─────────────┘
+                                                        │
+                                                   Docker Images
+                                                        │
+                                                        ▼
+                                                   Amazon ECR
+                                                 ┌──────┴──────┐
+                                                 │             │
+                                          Frontend Image   Backend Image
+                                                 │             │
+                                                 └──────┬──────┘
+                                                        │
+                                                        ▼
+                                                   Amazon EKS
+                                                ┌───────────────┐
+                                                │               │
+                                           Worker Node 1   Worker Node 2
+                                                │               │
+                                          Frontend Pod     Frontend Pod
+                                          Backend Pod      Backend Pod
+                                                │               │
+                                                └───────┬───────┘
+                                                        │
+                                                   Kubernetes
+                                                     Services
+                                                        │
+                                                        ▼
+                                                      NGINX
+                                                        │
+                                                        ▼
+                                                AWS Load Balancer
+                                                        │
+                                                        ▼
+                                                     Internet
+                                        
+                                                MongoDB Database
+                                                        │
+                                                 Persistent Volume
+                                                        │
+                                                   EBS CSI Driver
+                                                        │
+                                                        ▼
+                                                     AWS EBS
 ```
 
 ---
@@ -81,9 +81,9 @@ Instead of managing separate EC2 servers for each component, I used Kubernetes t
 
 I configured pod anti-affinity so that the two frontend replicas and two backend replicas were distributed across the two nodes:
 
-                                                          Node 1              Node 2
-                                                          Frontend 1          Frontend 2
-                                                          Backend 1           Backend 2
+                                        Node 1              Node 2
+                                        Frontend 1          Frontend 2
+                                        Backend 1           Backend 2
 
 This prevents all replicas of a workload from being placed on one node. If one node goes down, the replicas on the other node can continue serving the application.
 
@@ -142,10 +142,10 @@ I configured **pod anti-affinity rules** to distribute my frontend and backend r
 With two replicas for each application, I configured Kubernetes to avoid placing both replicas of the same component on the same node.
 
 ```text
-                                                            Worker Node 1          Worker Node 2
-                                                            ─────────────          ─────────────
-                                                            Frontend Pod 1         Frontend Pod 2
-                                                            Backend Pod 1          Backend Pod 2
+                                        Worker Node 1          Worker Node 2
+                                        ─────────────          ─────────────
+                                        Frontend Pod 1         Frontend Pod 2
+                                        Backend Pod 1          Backend Pod 2
 ```
 
 This means that if one worker node goes down, the other node still has a frontend and backend pod running, allowing the application to remain accessible.
