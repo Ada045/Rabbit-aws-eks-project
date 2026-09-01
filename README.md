@@ -75,7 +75,7 @@ The final architecture supports **containerized frontend and backend services, p
 
 # 1. AWS EKS Infrastructure
 
-I started by creating an Amazon EKS cluster with a managed node group containing two worker nodes. I deployed my frontend and backend in the rabbit-app namespace, while MongoDB ran separately in the rabbit-db namespace.
+I started by creating an Amazon EKS cluster with a managed node group containing two worker nodes. I deployed my **frontend and backend in the `rabbit-app` namespace**, while MongoDB database ran separately in the **`rabbit-db` namespace**.
 
 Instead of managing separate EC2 servers for each component, I used Kubernetes to manage my containers, pods, services, replicas, and workload distribution.
 
@@ -107,7 +107,7 @@ I then deployed MongoDB using Helm, with its storage configured through a **Pers
 
 I deployed **MongoDB using Helm** instead of manually creating each Kubernetes resource.
 
-I used `rabbit/mongo-k8s/values.yaml` to **override specific default configurations** from the Helm chart and add the settings I needed for my application, including **persistent storage and database authentication with a password**.
+I used **`rabbit/mongo-k8s/values.yaml`** to **override specific default configurations** from the Helm chart and add the settings I needed for my application, including **persistent storage and database authentication with a password**.
 
 MongoDB was exposed through a **Kubernetes Service**, giving my backend a stable internal endpoint to connect to the database within the cluster.
 
