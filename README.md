@@ -154,21 +154,14 @@ The goal was to improve **application availability and resilience** by avoiding 
 
 ---
 
----
-
 # 8. NGINX and External Application Access
 
-Once the application was running inside Kubernetes, I needed a way for external users to access it.
+To make the application accessible from the internet, I deployed NGINX as the entry point for traffic into the cluster.
 
-I deployed **NGINX** as the entry point for application traffic.
+I configured the NGINX Kubernetes Service as a LoadBalancer, which allowed AWS to provision an external load balancer and provide a public endpoint for the application.
 
-I configured the relevant Kubernetes Service as a **LoadBalancer**.
+The traffic flow was:
 
-AWS then provisioned an external load balancer that provided a publicly accessible endpoint.
-
-The traffic flow became:
-
-```text
 Internet
    │
    ▼
@@ -180,14 +173,8 @@ NGINX
    ├── Frontend
    │
    └── Backend
-```
 
-### Why?
-
-The frontend and backend workloads could remain internal to the Kubernetes cluster while NGINX handled incoming application traffic.
-
-The AWS LoadBalancer integration provided external access without exposing every individual application pod directly to the internet.
-
+The frontend and backend remained running inside the Kubernetes cluster, while NGINX handled routing incoming requests to the appropriate application service. This gave me a single external endpoint through which users could access the Rabbit LMS application.
 ---
 
 # 9. GitHub Actions CI/CD Pipeline
