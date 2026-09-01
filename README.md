@@ -75,15 +75,17 @@ The final architecture supports **containerized frontend and backend services, p
 
 # 1. AWS EKS Infrastructure
 
-I started by creating an **Amazon EKS cluster** with a managed node group containing **two worker nodes**. This cluster served as the environment where I deployed and managed my Rabbit LMS application.
+I started by creating an Amazon EKS cluster with a managed node group containing two worker nodes. I deployed my frontend and backend in the rabbit-app namespace, while MongoDB ran separately in the rabbit-db namespace.
 
-I separated the application workloads from the database by running the **frontend and backend in the `rabbit-app` namespace**, while MongoDB database was deployed in the **`rabbit-db` namespace**.
+Instead of managing separate EC2 servers for each component, I used Kubernetes to manage my containers, pods, services, replicas, and workload distribution.
 
-Instead of provisioning and managing separate EC2 servers for each application component, I used Kubernetes to manage the containers running across my nodes. Kubernetes handles pod scheduling, replica management, service discovery, container restarts, and workload distribution across the available nodes.
+I configured pod anti-affinity so that the two frontend replicas and two backend replicas were distributed across the two nodes:
 
-This also made scaling easier. Rather than creating additional servers manually whenever I needed more application instances, I could define the number of **replicas** I wanted in my deployments and let Kubernetes schedule those pods across the available nodes.
+Node 1              Node 2
+Frontend 1          Frontend 2
+Backend 1           Backend 2
 
-The two-node setup also allowed me to test how Kubernetes distributes workloads and maintain multiple frontend and backend replicas across the cluster.
+This prevents all replicas of a workload from being placed on one node. If one node goes down, the replicas on the other node can continue serving the application.
 
 <img width="1366" height="768" alt="Screenshot (49)" src="https://github.com/user-attachments/assets/8034850c-d18b-41b5-8552-ad0582aeb99a" />
 
@@ -103,18 +105,11 @@ I then deployed MongoDB using Helm, with its storage configured through a **Pers
 
 # 3. MongoDB Deployment with Helm
 
-I used **Helm** to deploy MongoDB into the Kubernetes cluster.
+I deployed **MongoDB using Helm** instead of manually creating each Kubernetes resource.
 
-Helm simplified the installation and configuration of the database components instead of manually creating every Kubernetes resource.
+I used `rabbit/mongo-k8s/values.yaml` to **override specific default configurations** from the Helm chart and add the settings I needed for my application, including **persistent storage and database authentication with a password**.
 
-The MongoDB deployment included the necessary:
-
-* Pod
-* Deployment
-* Service
-* Persistent storage configuration
-
-This allowed the backend application to communicate with MongoDB through Kubernetes networking.
+MongoDB was exposed through a **Kubernetes Service**, giving my backend a stable internal endpoint to connect to the database within the cluster.
 
 ---
 
