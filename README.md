@@ -10,7 +10,8 @@ The final architecture supports **containerized frontend and backend services, p
 
 ---
 <img width="2720" height="2080" alt="cicd_pipeline_flow" src="https://github.com/user-attachments/assets/d3d368d0-1fca-44ec-9514-6d641ac7f316" />
-<img width="2720" height="2080" alt="cicd_pipeline_flow" src="https://github.com/user-attachments/assets/984468d4-785d-4364-9676-0f4b2bef0008" />
+<img width="2720" height="2200" alt="eks_cluster_internals" src="https://github.com/user-attachments/assets/4b04947c-1a66-47f7-9b24-d34573f8bc75" />
+
 
 
 
