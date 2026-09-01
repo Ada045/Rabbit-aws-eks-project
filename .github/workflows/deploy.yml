@@ -1,0 +1,173 @@
+name: Rabbit LMS CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-3
+  AWS_ACCOUNT_ID: "926337676555"
+  ECR_REGISTRY: "926337676555.dkr.ecr.eu-west-3.amazonaws.com"
+  BACKEND_IMAGE: "926337676555.dkr.ecr.eu-west-3.amazonaws.com/rabbit-backend"
+  FRONTEND_IMAGE: "926337676555.dkr.ecr.eu-west-3.amazonaws.com/rabbit-frontend"
+  CLUSTER_NAME: rabbit-cluster
+  NAMESPACE: rabbit-app 
+  NGINX_URL: "http://ab89f129d2e494167a3032a298c6071a-922202157.eu-west-3.elb.amazonaws.com"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy to EKS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Increment Backend Version
+        working-directory: rabbit
+        run: |
+          npm version patch --no-git-tag-version
+          BACKEND_VERSION=$(node -p "require('./package.json').version")
+          echo "BACKEND_VERSION=${BACKEND_VERSION}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${BACKEND_VERSION}" >> "$GITHUB_ENV"
+          echo "Backend version: ${BACKEND_VERSION}"
+
+      - name: Increment Frontend Version
+        working-directory: rabbit/frontend
+        run: |
+          npm version patch --no-git-tag-version
+          FRONTEND_VERSION=$(node -p "require('./package.json').version")
+          echo "FRONTEND_VERSION=${FRONTEND_VERSION}" >> "$GITHUB_ENV"
+          echo "Frontend version: ${FRONTEND_VERSION}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password \
+            --region "${AWS_REGION}" | \
+          docker login \
+            --username AWS \
+            --password-stdin "${ECR_REGISTRY}"
+
+      - name: Build Backend Image
+        working-directory: rabbit
+        run: |
+          echo "Building backend...."
+          docker build \
+            -f backend/Dockerfile \
+            -t "${BACKEND_IMAGE}:${BACKEND_VERSION}" \
+            .
+
+      - name: Build Frontend Image
+        working-directory: rabbit
+        run: |
+          echo "Building Frontend..."
+          docker build \
+            --build-arg VITE_BACKEND_URL="${NGINX_URL}" \
+            -t "${FRONTEND_IMAGE}:${FRONTEND_VERSION}" \
+            ./frontend
+
+      - name: Push Backend Image
+        run: |
+          docker push "${BACKEND_IMAGE}:${BACKEND_VERSION}"
+      - name: Push Frontend Image 
+        run: |
+          docker push "${FRONTEND_IMAGE}:${FRONTEND_VERSION}"
+
+      - name: Configure EKS
+        run: |
+          echo "Configure Kubernetes..."
+          aws eks update-kubeconfig \
+            --region "${AWS_REGION}" \
+            --name "${CLUSTER_NAME}" 
+          echo "Testing Kubernetes access"
+          
+          kubectl get pods \
+            -n "$NAMESPACE"
+
+      - name: Deploy Backend
+        run: |
+          echo "Deploying backend version $BACKEND_VERSION..."
+          kubectl set image \
+            deployment/rabbit-backend \
+            backend="${BACKEND_IMAGE}:${BACKEND_VERSION}" \
+            -n "${NAMESPACE}"
+          echo "Waiting for backend rollout"
+          kubectl rollout status \
+            deployment/rabbit-backend \
+            -n "${NAMESPACE}" \
+            --timeout=180s
+
+      - name: Deploy frontend
+        run: |
+          echo "Deploying backend version $FRONTEND_VERSION..."
+          kubectl set image \
+            deployment/rabbit-frontend \
+            frontend="${FRONTEND_IMAGE}:${FRONTEND_VERSION}" \
+            -n "${NAMESPACE}"
+          echo "Waiting for frontend rollout"
+          kubectl rollout status \
+            deployment/rabbit-frontend \
+            -n "${NAMESPACE}" \
+            --timeout=180s
+
+      - name: Verify Deployment
+        run: |
+          echo "Deloyment Verification"
+          echo "Backend Deployment:"
+          kubectl get deployment \
+            rabbit-backend \
+            -n "${NAMESPACE}"
+
+          echo "Frontend deployment:"
+          kubectl get deployment \
+            rabbit-frontend \
+            -n "${NAMESPACE}"
+
+          echo "Pods:"
+          kubectl get pods \
+            -n "${NAMESPACE}" \
+            -o wide
+
+          echo "Services:"
+          kubectl get services \
+            -n "${NAMESPACE}"
+
+          echo "Backend image:"
+          kubectl get deployment \
+            rabbit-backend \
+            -n "${NAMESPACE}" \
+            -o jsonpath='{.spec.template.spec.containers[0].image}'
+
+          echo "Frontend image:"
+          kubectl get deployment \
+            rabbit-frontend \
+            -n "${NAMESPACE}" \
+            -o jsonpath='{.spec.template.spec.containers[0].image}'
+          
+          echo "Deployment Successful"
+          echo "Application Version: ${APP_VERSION}"
+          echo "Backend: ${BACKEND_IMAGE}:${BACKEND_VERSION}"
+          echo "Frontend: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}"
+          echo "Cluster: ${CLUSTER_NAME}"
+          echo "Namespace: ${NAMESPACE}"

@@ -1,0 +1,6 @@
+node_modules
+.env
+/backend/uploads 
+/frontend/node_modules
+/backend-k8s/secret.yaml
+/mongo-k8s/mongodb-secret.yaml

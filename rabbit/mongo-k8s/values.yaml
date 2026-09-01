@@ -1,0 +1,31 @@
+architecture: standalone
+
+auth:
+  enabled: true
+  rootUser: rootuser
+  existingSecret: mongodb-auth
+
+persistence:
+  enabled: true
+  size: 8Gi
+  storageClass: gp2
+
+service:
+  type: ClusterIP
+  ports:
+    mongodb: 27017
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 20
+  timeoutSeconds: 10
+  failureThreshold: 6
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 6
+
