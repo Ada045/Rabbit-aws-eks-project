@@ -77,7 +77,7 @@ The final architecture supports **containerized frontend and backend services, p
 
 I started by creating an **Amazon EKS cluster** with a managed node group containing **two worker nodes**. This cluster served as the environment where I deployed and managed my Rabbit LMS application.
 
-I separated the application workloads from the database by running the **frontend and backend in the `rabbit-app` namespace**, while MongoDB was deployed in a separate namespace.
+I separated the application workloads from the database by running the **frontend and backend in the `rabbit-app` namespace**, while MongoDB was deployed in the **`rabbit-db` namespace**.
 
 This also made scaling easier. Rather than creating additional servers manually whenever I needed more application instances, I could define the number of **replicas** I wanted in my deployments and let Kubernetes schedule those pods across the available nodes.
 
